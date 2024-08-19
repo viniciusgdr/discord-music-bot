@@ -3,7 +3,7 @@ import { InteractionMessage } from '../../domain/models/interactionMessage';
 import { AudioPlayer, AudioPlayerStatus, createAudioPlayer, createAudioResource, demuxProbe, entersState, getVoiceConnection, joinVoiceChannel, NoSubscriberBehavior, StreamType, VoiceConnectionStatus } from '@discordjs/voice';
 import { getVideoInfoY2Mate, searchY2Mate, Vitens, VitensClass } from '../../services/y2mate';
 import fetch from 'node-fetch';
-import { client } from '../..';
+import { client } from '../../..';
 import { searchYT } from '../../services/yt';
 import { SongQueue } from '../../domain/models/queue';
 async function createDownloadStream(url: string) {
