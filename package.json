@@ -1,0 +1,27 @@
+{
+  "name": "viniciusbot",
+  "version": "1.0.0",
+  "description": "bot discord",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "vinicius",
+  "license": "MIT",
+  "dependencies": {
+    "@discordjs/opus": "^0.5.3",
+    "@discordjs/voice": "^0.17.0",
+    "axios": "^1.7.4",
+    "discord.js": "^14.15.3",
+    "dotenv": "^10.0.0",
+    "ffmpeg-static": "^4.4.0",
+    "libsodium-wrappers": "^0.7.15",
+    "node-fetch": "^2.7.0",
+    "opusscript": "0.0.8",
+    "qs": "^6.13.0"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.6.11",
+    "@types/qs": "^6.9.15"
+  }
+}
