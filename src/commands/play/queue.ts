@@ -1,6 +1,6 @@
 import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import { InteractionMessage } from '../../domain/models/interactionMessage';
-import { client } from '../../..';
+import { client } from '../../main';
 
 export default {
   data: new SlashCommandBuilder()

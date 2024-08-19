@@ -1,7 +1,7 @@
 import { ActivityType, Client, Collection, Events, GatewayIntentBits, REST, Routes, SlashCommandBuilder, TextBasedChannel, VoiceBasedChannel } from 'discord.js';
 import path from 'path';
 import fs from 'fs';
-import { DiscordClient } from './src/domain/models/client';
+import { DiscordClient } from '../domain/models/client';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -32,7 +32,7 @@ const commands: any[] = [];
 async function loadCommands() {
   client.commands = new Collection();
   client.queue = new Map();
-  const foldersPath = path.join(__dirname, 'src', 'commands');
+  const foldersPath = path.join(__dirname, '..', 'commands');
   const commandFolders = fs.readdirSync(foldersPath);
 
   for (const folder of commandFolders) {
