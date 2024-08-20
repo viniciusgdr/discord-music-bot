@@ -42,9 +42,12 @@ export default {
 		const isYoutubeURL = song.match(/^(https?\:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+/);
 		let item: VitensClass;
 		if (isYoutubeURL) {
+			const videoIdExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+			const videoId = song.match(videoIdExp);
+
 			item = new VitensClass({
 				t: 'Youtube Video',
-				v: song,
+				v: videoId![1],
 			})
 		} else {
 			const search = await searchYT(song);
