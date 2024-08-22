@@ -129,6 +129,7 @@ export async function play(channel: VoiceBasedChannel, song: SongQueue) {
 		queue.songs.shift();
 		if (queue.songs.length === 0) {
 			player.stop();
+			client.queue.delete(channel.guild.id);
 			connection.destroy();
 			return;
 		}
