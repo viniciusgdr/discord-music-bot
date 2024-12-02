@@ -60,7 +60,7 @@ interface InfoY2Mate {
   };
 }
 
-interface ContentVideoY2Mate {
+export interface ContentVideoY2Mate {
   f: string;
   k: string;
   q: string;

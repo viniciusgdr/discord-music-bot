@@ -6,10 +6,77 @@ import fetch from 'node-fetch';
 import { client } from '../../main';
 import { searchYT } from '../../services/yt';
 import { SongQueue } from '../../domain/models/queue';
+import { fetchPlaylistVideos, isPlaylist } from '../../services/youtube/playlist';
 async function createDownloadStream(url: string) {
 	const response = await fetch(url);
 	return response.body
 }
+
+async function playlistQueue(playlistId: string, interaction: InteractionMessage, channel: VoiceBasedChannel) {
+	const videos = await fetchPlaylistVideos(playlistId);
+	await interaction.editReply(`Found ${videos.length} videos in playlist`);
+	const queue = client.queue.get(interaction.guildId!);
+	let hasQueue = queue && queue.songs.length > 0;
+	let queueConstruct = queue || {
+		textChannel: interaction.channel,
+		voiceChannel: channel,
+		songs: [],
+		volume: 100,
+		playing: true,
+		player: null,
+		connection: null
+	};
+
+	const processVideo = async (video: any) => {
+		const item = new VitensClass({
+			t: 'Youtube Video',
+			v: video.videoId
+		});
+		const info = await getVideoInfoY2Mate(item);
+		const highAudio = info.getHighAudio();
+		if (!highAudio) {
+			return;
+		}
+		if (!hasQueue) {
+			hasQueue = true;
+			const url = await info.getUrl(highAudio);
+			queueConstruct.songs.push({ 
+				title: info.title, 
+				url, 
+				highAudio,
+				info,
+				thumbnail: `https://i.ytimg.com/vi/${info.vid}/maxresdefault.jpg`
+			});
+			client.queue.set(interaction.guildId!, queueConstruct);
+			play(channel, queueConstruct.songs[0]);
+			return
+		}
+		queueConstruct.songs.push({ 
+			title: info.title, 
+			highAudio,
+			info,
+			thumbnail: `https://i.ytimg.com/vi/${info.vid}/maxresdefault.jpg`
+		});
+		client.queue.set(interaction.guildId!, queueConstruct);
+	};
+
+	const firstVideo = videos.shift();
+	if (firstVideo) {
+		await processVideo(firstVideo);
+		await interaction.editReply(`Playing: ${queueConstruct.songs[0].title}`);
+	}
+
+	for (let i = 0; i < videos.length; i++) {
+		if (i === 0) {
+			continue;
+		}
+		await processVideo(videos[i]);
+		await interaction.editReply(`Added to queue: ${queueConstruct.songs[i].title} - ${i + 1}/${videos.length}`);
+	}
+
+	await interaction.followUp(`Added ${videos.length + 1} songs to queue`);
+}
+
 export default {
 	data: new SlashCommandBuilder()
 		.setName('play')
@@ -37,10 +104,11 @@ export default {
 			return;
 		}
 
-		await interaction.reply('Searching...');
+		await interaction.reply('Identificando...');
 
 		const isYoutubeURL = song.match(/^(https?\:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+/);
 		let item: VitensClass;
+
 		if (isYoutubeURL) {
 			const videoIdExp = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
 			const videoId = song.match(videoIdExp);
@@ -49,7 +117,18 @@ export default {
 				t: 'Youtube Video',
 				v: videoId![1],
 			})
+
+			const isPlaylistURL = isPlaylist(song);
+			if (isPlaylistURL) {
+				await interaction.editReply('Buscando na playlist...');
+				const playlistId = song.match(/(?:list=)([a-zA-Z0-9_-]+)/);
+				if (playlistId) {
+					await playlistQueue( playlistId[1], interaction, channel);
+					return;
+				}
+			}
 		} else {
+			await interaction.editReply('Buscando na rede...');
 			const search = await searchYT(song);
 			if (!search.length) {
 				await interaction.reply('No results found!');
@@ -60,6 +139,7 @@ export default {
 				t: search[0].title,
 			});
 		}
+		await interaction.editReply('Obtendo Conexão IP...');
 		const info = await getVideoInfoY2Mate(item);
 		const highAudio = info.getHighAudio();
 		if (!highAudio) {
@@ -73,6 +153,8 @@ export default {
 			queue.songs.push({ 
 				title: info.title, 
 				url, 
+				highAudio,
+				info,
 				thumbnail: `https://i.ytimg.com/vi/${info.vid}/maxresdefault.jpg`
 			});
 			await interaction.editReply(`Added to queue: ${info.title}`);
@@ -86,6 +168,8 @@ export default {
 				{
 					title: info.title,
 					url,
+					highAudio,
+					info,
 					thumbnail: `https://i.ytimg.com/vi/${info.vid}/maxresdefault.jpg`
 				}
 			],
@@ -113,7 +197,6 @@ export async function play(channel: VoiceBasedChannel, song: SongQueue) {
 		return;
 	}
 
-	
 	const connection = getVoiceConnection(channel.guild.id) ?? joinVoiceChannel({
 		channelId: channel.id,
 		guildId: channel.guild.id,
@@ -135,7 +218,14 @@ export async function play(channel: VoiceBasedChannel, song: SongQueue) {
 		}
 		play(channel, queue.songs[0]);
 	})
-	const stream = await createDownloadStream(song.url)
+	const url = song?.url || (await song.info.getUrl(song.highAudio))
+	if (!url.includes('https://')) {
+		return;
+	}
+	console.log('streaming', url)
+	const stream = await createDownloadStream(
+		url
+	)
 	
 	const mp3Stream = await probeAndCreateResource(stream)
 	player.play(mp3Stream);
